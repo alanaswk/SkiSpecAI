@@ -3,9 +3,9 @@ import uuid
 import difflib
 from urllib import request as urlrequest
 from urllib.error import URLError, HTTPError
+from collections import defaultdict
 
 from golden_dataset import GOLDEN_CASES
-
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -41,25 +41,46 @@ def main():
     passed = 0
     failed_cases = []
 
+    # NEW: Track category stats
+    category_totals = defaultdict(int)
+    category_passed = defaultdict(int)
+
     for case in GOLDEN_CASES:
         session_id = str(uuid.uuid4())
         user_message = case["user_message"]
         expected = normalize(case["expected_answer"])
+        category = case["category"]
 
-        resp = post_json(f"{BASE_URL}/chat", {"message": user_message, "session_id": session_id})
+        category_totals[category] += 1
+
+        resp = post_json(
+            f"{BASE_URL}/chat",
+            {"message": user_message, "session_id": session_id},
+        )
         got = normalize(resp.get("response", ""))
 
         ok = (got == expected)
+
         if ok:
             passed += 1
+            category_passed[category] += 1
         else:
             failed_cases.append((case["id"], user_message, expected, got))
 
-        print(f"{case['id']}: {'PASS' if ok else 'FAIL'}")
+        print(f"{case['id']} ({category}): {'PASS' if ok else 'FAIL'}")
 
     print("\n" + "=" * 60)
-    print(f"RESULT: {passed}/{total} passed")
+    print(f"OVERALL: {passed}/{total} passed ({passed/total:.1%})")
 
+    # NEW: Category breakdown
+    print("\nPASS RATES BY CATEGORY:")
+    for category in category_totals:
+        cat_total = category_totals[category]
+        cat_pass = category_passed[category]
+        rate = cat_pass / cat_total
+        print(f"  {category}: {cat_pass}/{cat_total} ({rate:.1%})")
+
+    # Failure details (unchanged)
     if failed_cases:
         print("\nFAILED DETAILS:")
         for case_id, user_message, expected, got in failed_cases:
@@ -79,7 +100,7 @@ def main():
                 lineterm="",
             )
             print("\n".join(diff))
-
+            
 
 if __name__ == "__main__":
     main()

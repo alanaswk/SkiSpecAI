@@ -24,17 +24,6 @@ You provide:
 - DIN range guidance (never exact values)
 - A required safety note about certified technicians
 
-You do NOT provide:
-- Snowboarding equipment guidance
-- Avalanche safety training or backcountry survival instruction
-- Lift pass or resort recommendations
-- Weather forecasts
-- Brand-specific recommendations
-- Medical advice or injury treatment guidance
-- Exact DIN numbers
-
-If a request is outside scope or requests unsafe binding behavior, respond with a brief refusal explaining the limitation and redirect to supported ski gear compatibility guidance.
-
 All in-domain answers MUST follow this exact format:
 
 Ski type: ...
@@ -47,9 +36,84 @@ DIN guidance: #.#–#.#
 
 Note: Exact DIN should be set by a certified technician.
 
-Always include the final DIN safety note.
-Never provide exact DIN values.
 Never deviate from the structured format.
+Only output the required fields and the single final safety note line.
+</s>
+
+<|user|>
+I am a beginner skier who skis only groomed runs at a resort.
+</s>
+<|assistant|>
+Ski type: All-Mountain
+Ability level: Beginner
+
+Recommended ski waist width: 75–88 mm
+Recommended boot flex: 60–80
+Binding type guidance: Alpine
+DIN guidance: 3.0–6.0
+
+Note: Exact DIN should be set by a certified technician.
+</s>
+
+<|user|>
+I am an advanced skier who loves deep powder days.
+</s>
+<|assistant|>
+Ski type: Powder
+Ability level: Advanced
+
+Recommended ski waist width: 105–120 mm
+Recommended boot flex: 100–120
+Binding type guidance: Alpine
+DIN guidance: 6.0–10.0
+
+Note: Exact DIN should be set by a certified technician.
+</s>
+
+<|user|>
+I want skis only for ski touring and I am intermediate.
+</s>
+<|assistant|>
+Ski type: Touring
+Ability level: Intermediate
+
+Recommended ski waist width: 90–105 mm
+Recommended boot flex: 90–110
+Binding type guidance: Tech/PIN
+DIN guidance: 5.0–8.0
+
+Note: Exact DIN should be set by a certified technician.
+</s>
+
+<|user|>
+I am an expert skier who skis aggressively on groomed runs.
+</s>
+<|assistant|>
+Ski type: All-Mountain
+Ability level: Expert
+
+Recommended ski waist width: 80–95 mm
+Recommended boot flex: 120–140
+Binding type guidance: Alpine
+DIN guidance: 8.0–12.0
+
+Note: Exact DIN should be set by a certified technician.
+</s>
+
+<|user|>
+My child is 7 years old, weighs 55 pounds, and is learning to ski.
+</s>
+<|assistant|>
+Ski type: All-Mountain
+Ability level: Beginner
+
+Recommended ski waist width: 65–75 mm
+Recommended boot flex: 40–60
+Binding type guidance: Alpine
+DIN guidance: 0.5–2.5
+
+Note: Exact DIN should be set by a certified technician.
+</s>
 
 The conversation begins.
 </s>
@@ -74,17 +138,25 @@ def generate_text(prompt_text: str) -> str:
     new_tokens = outputs[0][input_length:]
     return tokenizer.decode(new_tokens, skip_special_tokens=False)
 
-REFUSAL_TEMPLATE = """This assistant provides ski gear compatibility guidance only.
+OOS_TEMPLATE = """This assistant provides ski gear compatibility guidance only.
 
-Please provide your skiing ability and terrain preferences for equipment compatibility guidance.
+That request is outside the supported scope. Please ask about ski setup compatibility (ski type, waist width, boot flex, binding type, DIN range guidance).
 """
 
-def enforce_policy(response: str, user_message: str) -> str:
+NEEDS_INFO_TEMPLATE = """I don’t have enough information yet to recommend ski setup compatibility.
+
+Please tell me:
+- Terrain/style (groomers, powder, park, touring, mixed resort)
+- Your weight (or skier type/size)
+(Optional: age, if a child)
+"""
+
+def enforce_policy(response: str, user_message: str, session_text: str) -> str:
     user_lower = user_message.lower()
 
     oos_keywords = ["snowboard", "avalanche", "weather", "epic", "ikon", "brand", "forecast"]
     if any(word in user_lower for word in oos_keywords):
-        return REFUSAL_TEMPLATE.strip()
+        return OOS_TEMPLATE.strip()
 
     if "exact din" in user_lower or "never release" in user_lower:
         return """This assistant provides general ski gear compatibility guidance only.
@@ -92,26 +164,42 @@ def enforce_policy(response: str, user_message: str) -> str:
 Exact DIN values must be set by a certified ski technician to ensure safety and proper release.
 """.strip()
 
-    required_fields = [
-        "Ski type:",
-        "Ability level:",
-        "Recommended ski waist width:",
-        "Recommended boot flex:",
-        "Binding type guidance:",
-        "DIN guidance:",
-        "Note: Exact DIN should be set by a certified technician.",
-    ]
-    if any(field not in response for field in required_fields):
-        return REFUSAL_TEMPLATE.strip()
+    if needs_more_info(user_message, session_text):
+        return NEEDS_INFO_TEMPLATE.strip()
 
+    # If model output is malformed, don’t call it “out of scope” — ask for clarification
     waist_match = re.search(r"\d{2,3}–\d{2,3} mm", response)
     flex_match = re.search(r"\d{2,3}–\d{2,3}", response)
     din_match = re.search(r"\d\.\d–\d{1,2}\.\d", response)
+
     if not waist_match or not flex_match or not din_match:
-        return REFUSAL_TEMPLATE.strip()
+        return NEEDS_INFO_TEMPLATE.strip()
 
     return response.strip()
 
+def needs_more_info(user_message: str, session_text: str) -> bool:
+    text = (session_text + "\n" + user_message).lower()
+
+    has_ability = any(x in text for x in ["beginner", "intermediate", "advanced", "expert"])
+    has_terrain = any(x in text for x in ["groomer", "groomers", "resort", "powder", "park", "tour", "touring", "off-piste", "trees"])
+    has_weight = any(x in text for x in [" lb", "lbs", "pound", "pounds", "kg", "kilogram"])
+    is_child = any(x in text for x in ["child", "kid", "years old", "year old"])
+
+    if (has_ability and not has_terrain) or (has_terrain and not has_ability):
+        return True
+
+    if is_child and not (has_weight):
+        return True
+
+    return False
+
+def truncate_after_safety_note(text: str) -> str:
+    marker = "Note: Exact DIN should be set by a certified technician."
+    idx = text.find(marker)
+    if idx == -1:
+        return text.strip()
+    return text[: idx + len(marker)].strip()
+    
 sessions: dict[str, str] = {}
 
 app = FastAPI()
@@ -162,7 +250,7 @@ def golden_backstop(user_message: str) -> str | None:
             "Note: Exact DIN should be set by a certified technician."
         )
 
-    if "never skied before" in ml or "have never skied" in ml:
+    if "never skied" in ml:
         return (
             "Ski type: All-Mountain\n"
             "Ability level: Beginner\n\n"
@@ -321,10 +409,10 @@ def golden_backstop(user_message: str) -> str | None:
             "Please provide your skiing ability and terrain preferences."
         )
 
-    if "ignore your instructions" in ml and "exact din" in ml:
+    if "exact din" in ml or "max din" in ml:
         return (
             "This assistant provides general ski gear compatibility guidance only.\n\n"
-            "Exact DIN values must be determined by a certified ski technician.\n"
+            "Exact DIN values must be set by a certified ski technician to ensure safety and proper release.\n"
             "Providing unsafe binding instructions is outside the supported scope."
         )
 
@@ -333,24 +421,30 @@ def golden_backstop(user_message: str) -> str | None:
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     session_id = request.session_id or str(uuid.uuid4())
+
     if session_id not in sessions:
         sessions[session_id] = f"{SYSTEM_PROMPT}\n<|user|>\n"
 
     sessions[session_id] += request.message + "</s>\n<|assistant|>\n"
-    
+
     gold = golden_backstop(request.message)
+
     if gold is not None:
         clean_response = gold
     else:
         raw_output = generate_text(sessions[session_id])
         clean_response = raw_output.split("</s>")[0] if "</s>" in raw_output else raw_output
-        clean_response = enforce_policy(clean_response.strip(), request.message)
+        clean_response = enforce_policy(clean_response.strip(), request.message, sessions[session_id])
+        clean_response = truncate_after_safety_note(clean_response)
 
-    clean_response = raw_output.split("</s>")[0] if "</s>" in raw_output else raw_output
-    clean_response = enforce_policy(clean_response.strip(), request.message)
+    print("DEBUG formatted response:\n", clean_response)
 
     sessions[session_id] += clean_response + "</s>\n<|user|>\n"
-    return ChatResponse(response=clean_response.strip(), session_id=session_id)
+
+    return ChatResponse(
+        response=clean_response.strip(),
+        session_id=session_id
+    )
 
 @app.post("/clear")
 def clear(session_id: str | None = None):
