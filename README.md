@@ -2,8 +2,6 @@
 
 Domain-specific chatbot that provides structured ski gear compatibility guidance (ski type, waist width, boot flex, binding type, DIN range).
 
----
-
 ## Scope
 
 The assistant provides equipment compatibility guidance only.
@@ -18,16 +16,12 @@ It does **not** provide:
 
 Out-of-scope or unsafe requests return a structured refusal.
 
----
-
 ## Prompting Strategy
 
 - Defined role/persona in system prompt  
 - ≥3 few-shot examples  
 - Positive constraints (what the assistant can answer)  
 - Escape hatch for unsafe or unsupported queries  
-
----
 
 ## Run Locally (uv-based)
 
@@ -42,8 +36,6 @@ Run the app:
 Open:
 
     http://localhost:8000
-
----
 
 ## Evaluation
 
@@ -60,8 +52,6 @@ Includes:
 - Deterministic exact-match metric  
 - Category-level pass rates  
 - Golden-reference MaaJ evaluation  
-
----
 
 ## Live Deployment
 
