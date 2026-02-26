@@ -130,7 +130,7 @@
                 const loading = addMessage("assistant", "Thinking...", true);
 
                 try {
-                    const res = await fetch("/chat", {
+                    const res = await fetch("chat", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -138,6 +138,13 @@
                             session_id: sessionId,
                         }),
                     });
+                    // If the server returns HTML or an error page, don't try to JSON-parse it
+                    const contentType = resp.headers.get("content-type") || "";
+                    if (!contentType.includes("application/json")) {
+                    const raw = await resp.text();
+                    throw new Error("Non-JSON response (likely wrong URL). First chars: " + raw.slice(0, 60));
+                    }
+
                     const data = await res.json();
                     sessionId = data.session_id;
                     loading.querySelector(".content").textContent =

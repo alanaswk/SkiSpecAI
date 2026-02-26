@@ -4,17 +4,20 @@ Domain-specific chatbot that provides structured ski gear compatibility guidance
 
 ## Scope
 
-The assistant provides equipment compatibility guidance only.
+Supported:
+- Ski setup compatibility guidance only (ski type, waist width, boot flex, binding type, DIN range guidance)
 
-It does **not** provide:
-- Brand recommendations  
-- Weather forecasts  
-- Lift pass advice  
-- Avalanche safety training  
-- Medical advice  
+Out of scope categories (the assistant refuses and redirects back to ski setup compatibility):
+- Snowboarding gear or technique
+- Avalanche safety / backcountry risk management / rescue training
+- Weather forecasts / trip planning / resort pass comparisons (Epic vs Ikon)
+- Brand-specific shopping or “best brand” recommendations
+- Medical advice or injury-prevention prescriptions
 - Exact DIN numbers
 
 Out-of-scope or unsafe requests return a structured refusal.
+
+---
 
 ## Prompting Strategy
 
