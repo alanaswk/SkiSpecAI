@@ -274,4 +274,65 @@ def main():
             rr = rubric_maaj(user_message, got, category)
             rubric_maaj_done += 1
             if rr["verdict"] == "PASS":
-  
+                rubric_maaj_pass += 1
+            print(f"  MaaJ(rubric): {rr['verdict']} — {rr['reason']}")
+
+    # ----------------------------
+    # Summary
+    # ----------------------------
+    print("\n====================")
+    print("SUMMARY")
+    print("====================")
+
+    exact_rate = passed / total if total else 0.0
+    det_rate = det_passed / total if total else 0.0
+
+    print(f"Total cases: {total}")
+    print(f"Exact-match pass rate: {passed}/{total} = {exact_rate:.1%}")
+    print(f"Deterministic pass rate: {det_passed}/{total} = {det_rate:.1%}\n")
+
+    print("Category breakdown (exact-match):")
+    for cat in sorted(category_totals.keys()):
+        ct = category_totals[cat]
+        cp = category_passed[cat]
+        rate = (cp / ct) if ct else 0.0
+        print(f"  {cat}: {cp}/{ct} = {rate:.1%}")
+
+    print("\nCategory breakdown (det-metric):")
+    for cat in sorted(category_totals.keys()):
+        ct = category_totals[cat]
+        dp = category_det_passed[cat]
+        rate = (dp / ct) if ct else 0.0
+        print(f"  {cat}: {dp}/{ct} = {rate:.1%}")
+
+    print("\nMaaJ results:")
+    if golden_maaj_done:
+        print(f"  Golden-reference MaaJ: {golden_maaj_pass}/{golden_maaj_done} = {(golden_maaj_pass/golden_maaj_done):.1%}")
+    else:
+        print("  Golden-reference MaaJ: (not run)")
+
+    if rubric_maaj_done:
+        print(f"  Rubric MaaJ: {rubric_maaj_pass}/{rubric_maaj_done} = {(rubric_maaj_pass/rubric_maaj_done):.1%}")
+    else:
+        print("  Rubric MaaJ: (not run)")
+
+    # Print failures (helpful for debugging)
+    if failed_cases:
+        print("\n====================")
+        print("FAILED CASES (exact-match)")
+        print("====================")
+        for cid, umsg, exp, got in failed_cases:
+            print(f"\n--- {cid} ---")
+            print(f"USER: {umsg}")
+            print("EXPECTED:")
+            print(exp)
+            print("GOT:")
+            print(got)
+
+    # Non-zero exit for CI / grading scripts (optional but useful)
+    if failed_cases:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
