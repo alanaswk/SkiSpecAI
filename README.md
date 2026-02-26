@@ -17,8 +17,6 @@ Out of scope categories (the assistant refuses and redirects back to ski setup c
 
 Out-of-scope or unsafe requests return a structured refusal.
 
----
-
 ## Prompting Strategy
 
 - Defined role/persona in system prompt  
