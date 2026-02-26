@@ -124,7 +124,7 @@ SkiSpecAI/
 - `index.html`
 - `pyproject.toml`
 - `uv.lock`
-- 'Dockerfile'
+- `Dockerfile`
 - `README.md`
 - eval/
     - `golden_dataset.py`
