@@ -169,7 +169,7 @@ def heuristic_answer(user_message: str, session_text: str) -> str:
     if needs_more_info(user_message, session_text):
         return NEEDS_INFO_TEMPLATE.strip()
 
-    text = (session_text + "\n" + user_message).lower()
+    text = user_message.lower()
 
     # ability
     if "expert" in text:
@@ -276,7 +276,7 @@ Exact DIN values must be set by a certified ski technician to ensure safety and 
     return response.strip()
 
 def needs_more_info(user_message: str, session_text: str) -> bool:
-    text = (session_text + "\n" + user_message).lower()
+    text = user_message.lower()
 
     has_ability = any(x in text for x in ["beginner", "intermediate", "advanced", "expert"])
     has_terrain = any(x in text for x in ["groomer", "groomers", "resort", "powder", "park", "tour", "touring", "off-piste", "trees"])
@@ -537,7 +537,7 @@ def chat(request: ChatRequest):
             return ChatResponse(response=simple_judge(request.message), session_id=session_id)
 
         if session_id not in sessions:
-            sessions[session_id] = f"{SYSTEM_PROMPT}\n<|user|>\n"
+            sessions[session_id] = ""
 
         sessions[session_id] += request.message + "</s>\n<|assistant|>\n"
 
