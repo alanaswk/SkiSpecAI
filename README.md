@@ -2,8 +2,6 @@
 
 A domain-specific conversational assistant that provides structured alpine ski gear compatibility guidance. The assistant generates standardized recommendations for ski type, waist width, boot flex, binding type, and DIN range guidance while enforcing strict domain and safety constraints.
 
----
-
 ## Overview
 
 This project implements a constrained large language model application designed to operate within a narrow domain: alpine ski equipment compatibility.
@@ -26,8 +24,6 @@ The application includes:
 - Deterministic golden dataset evaluation  
 - FastAPI-based web interface  
 - Local evaluation runner  
-
----
 
 ## Scope
 
@@ -55,8 +51,6 @@ The assistant explicitly refuses and redirects when prompted with:
 
 Out-of-scope or unsafe queries return structured refusal responses.
 
----
-
 ## Prompting Strategy
 
 The assistant uses a constrained prompting approach:
@@ -71,23 +65,19 @@ The assistant uses a constrained prompting approach:
 
 All valid in-domain responses must follow a strict multiline structure.
 
----
-
 ## Architecture
 
 - **Backend:** FastAPI  
 - **Model:** TinyLlama-1.1B-Chat (CPU inference)  
 - **Policy Layer:** Post-generation validation and safety enforcement  
 - **Evaluation:** Golden dataset exact-match comparison  
-- **Frontend:** Browser-based chat interface  
-
----
-
+- **Frontend:** Browser-based chat interface
+  
 ## Running Locally
 
 ### 1. Clone the Repository
 
-`git clone https://github.com/jonah-ernest/SkiSpecAI.git
+`git clone https://github.com/alanaswk/SkiSpecAI.git
 cd SkiSpecAI`
 
 
@@ -103,8 +93,6 @@ The application will start at:
 `http://localhost:8000`
 
 Open this URL in your browser to use the chatbot.
-
----
 
 ## Evaluation
 
@@ -123,8 +111,6 @@ The script reports:
 - Aggregate pass rate
 - Detailed diffs for failures
 
----
-
 ## Live Deployment
 
 Deployed on Google Cloud Platform.
@@ -132,20 +118,17 @@ Deployed on Google Cloud Platform.
 Live URL:
 `https://skispecai-371561542181.us-central1.run.app/`
 
----
-
 ## Repository Structure
 SkiSpecAI/
 - `app.py`
 - `index.html`
 - `pyproject.toml`
 - `uv.lock`
+- 'Dockerfile'
 - `README.md`
 - eval/
     - `golden_dataset.py`
     - `run_eval.py`
-
----
 
 ## Notes
 - The assistant never provides exact DIN values.
